@@ -8,30 +8,34 @@ import numpy as np
 from PIL import Image
 import torch
 import torchvision
+import os
 
 
-def save_masked_image(image_mask, save_path="generation_samples/inpainting_box_mask/"):
+def save_masked_image(image_mask, save_path):
     # Assuming image_mask is a torch.Tensor representing the masked image
     # You'll need to convert it to the desired image format and save it to the specified path
     # Here's an example using Pillow library (requires the 'Pillow' package to be installed)
 
     # Convert the tensor to a numpy array
-    image_array = image_mask.numpy()
+    #image_array = image_mask.numpy()
 
     # Create a PIL Image object
-    image = Image.fromarray(image_array)
+    image = Image.fromarray(image_mask)
+    image = image.convert("L")
 
     # Save the image to the specified path
     image.save(save_path, format="png")
 
 
-def draw_masks_from_boxes(boxes, size, randomize_fg_mask=False, random_add_bg_mask=False, save_path=None):
+def draw_masks_from_boxes(boxes, size, randomize_fg_mask=False, random_add_bg_mask=False):
     "boxes should be the output from dataset, which is a batch of bounding boxes"
 
     image_masks = [] 
+    k=0
     for box in boxes: # This is batch dimension
 
         image_mask = torch.ones(size,size)
+        image_mask_np = np.ones((size,size))
         for bx in box:
             x0,y0,x1,y1 = bx*size
             x0,y0,x1,y1 = int(x0), int(y0), int(x1), int(y1)
@@ -40,19 +44,21 @@ def draw_masks_from_boxes(boxes, size, randomize_fg_mask=False, random_add_bg_ma
             if randomize_fg_mask and (random.uniform(0,1)<0.5) and (obj_height>=4) and (obj_width>=4):
                 obj_mask = get_a_fg_mask(obj_height, obj_width)
                 image_mask[y0:y1,x0:x1] = image_mask[y0:y1,x0:x1] * obj_mask # put obj mask into the inpainting mask 
+                image_mask_np[y0:y1,x0:x1] = image_mask_np[y0:y1,x0:x1] * obj_mask
             else:
                 image_mask[y0:y1,x0:x1] = 0  # box itself is mask for the obj
-        
+                image_mask_np[y0:y1,x0:x1] = 0
 
         # So far we already drew all masks for obj, add bg mask if needed
         if random_add_bg_mask and (random.uniform(0,1)<0.5):
             bg_mask = get_a_bg_mask(size)
             image_mask *= bg_mask
-
+            image_mask_np*= bg_mask
+        
+        k=k+1
+        save_masked_image(image_mask_np, f"generation_samples/inpainting_box_mask/{str(k)}.png")  # Save the masked image
+        print(f"Saved masks in generation_samples/inpainting_box_mask/{str(k)}.png")
         image_masks.append(image_mask)
-
-        if save_path is not None:
-            save_masked_image(image_mask, save_path)  # Save the masked image
 
     return torch.stack(image_masks).unsqueeze(1)
 

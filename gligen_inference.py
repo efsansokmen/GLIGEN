@@ -397,7 +397,7 @@ def run(meta, config, starting_noise=None):
         # inpaint mode 
         assert config.inpaint_mode, 'input_image is given, the ckpt must be the inpaint model, are you using the correct ckpt?'
         
-        inpainting_mask = draw_masks_from_boxes( batch['boxes'], model.image_size  ).cuda()
+        inpainting_mask = draw_masks_from_boxes( batch['boxes'], model.image_size ).cuda()
         
         input_image = F.pil_to_tensor( Image.open(meta["input_image"]).convert("RGB").resize((512,512)) ) 
         input_image = ( input_image.float().unsqueeze(0).cuda() / 255 - 0.5 ) / 0.5
@@ -431,20 +431,28 @@ def run(meta, config, starting_noise=None):
     samples_fake = autoencoder.decode(samples_fake)
 
 
-    # - - - - - save - - - - - #
+    # - - - - - save img and masks- - - - - #
     output_folder = os.path.join( args.folder,  meta["save_folder_name"])
     os.makedirs( output_folder, exist_ok=True)
+    output_folder_mask = os.path.join( args.folder,  "inpainting_box_mask")
+    os.makedirs( output_folder_mask, exist_ok=True)
 
     start = len( os.listdir(output_folder) )
     image_ids = list(range(start,start+config.batch_size))
     print(image_ids)
-    for image_id, sample in zip(image_ids, samples_fake):
+    for image_id, sample, mask in zip(image_ids, samples_fake, inpainting_mask):
         img_name = str(int(image_id))+'.png'
         sample = torch.clamp(sample, min=-1, max=1) * 0.5 + 0.5
         sample = sample.cpu().numpy().transpose(1,2,0) * 255 
         sample = Image.fromarray(sample.astype(np.uint8))
         sample.save(  os.path.join(output_folder, img_name)   )
 
+        #img_name_mask = str(int(image_id))+'_mask.png'
+        ##sample_mask = torch.clamp(mask, min=-1, max=1) * 0.5 + 0.5
+        #sample_mask = mask.cpu().numpy().transpose(1,2,0) * 255
+        #print("SAMPLE MASK",sample_mask, np.shape(sample_mask))
+        #sample_mask = Image.fromarray(sample_mask.astype(np.uint8))
+        #sample_mask.save(  os.path.join(output_folder_mask, img_name_mask)   )
 
 
 
@@ -518,10 +526,10 @@ if __name__ == "__main__":
         # - - - - - - - - GLIGEN on image grounding for inpainting - - - - - - - - # 
         dict(
             ckpt = "../../checkpoints/inpainting_box_text_image.bin",
-            input_image = "inference_images/kitchen_green.png",
+            input_image = "inference_images/test.png",
             prompt = "kitchen lights",
             images = [ 'inference_images/hanging_light.png'],
-            locations = [ [0.232, 0.000, 0.2,0.398] ], # mask will be derived from box 
+            locations = [ [0.0, 0.000, 0.5,0.5] ], # mask will be derived from box 
             save_folder_name="inpainting_box_image"
         ),
 

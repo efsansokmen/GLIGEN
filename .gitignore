@@ -91,3 +91,4 @@ figures/raw_bounding_boxes/*
 generation_samples/inpainting_box_image/*
 test.py
 inference_images/*
+generation_samples/*
