@@ -85,3 +85,6 @@ target/
 lib/pycocotools/_mask.c
 lib/nms/cpu_nms.c
 
+# DATA
+DATA/filtered_data_mt3_prob_clean.json
+figures/raw_bounding_boxes/*
