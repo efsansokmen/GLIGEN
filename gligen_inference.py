@@ -517,11 +517,11 @@ if __name__ == "__main__":
 
         # - - - - - - - - GLIGEN on image grounding for inpainting - - - - - - - - # 
         dict(
-            ckpt = "../gligen_checkpoints/checkpoint_inpainting_text_image.pth",
-            input_image = "inference_images/beach.jpg",
-            prompt = "a bigben on the beach",
-            images = [ 'inference_images/bigben.jpg'],
-            locations = [ [0.18, 0.08, 0.62, 0.75] ], # mask will be derived from box 
+            ckpt = "../../checkpoints/inpainting_box_text_image.bin",
+            input_image = "inference_images/kitchen_green.png",
+            prompt = "kitchen lights",
+            images = [ 'inference_images/hanging_light.png'],
+            locations = [ [0.232, 0.000, 0.2,0.398] ], # mask will be derived from box 
             save_folder_name="inpainting_box_image"
         ),
 
@@ -639,10 +639,7 @@ if __name__ == "__main__":
 
     starting_noise = torch.randn(args.batch_size, 4, 64, 64).to(device)
     starting_noise = None
-    for meta in meta_list:
+    for meta in meta_list[4:5]:
         run(meta, args, starting_noise)
-
-    
-
 
 

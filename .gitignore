@@ -88,3 +88,6 @@ lib/nms/cpu_nms.c
 # DATA
 DATA/filtered_data_mt3_prob_clean.json
 figures/raw_bounding_boxes/*
+generation_samples/inpainting_box_image/*
+test.py
+inference_images/*

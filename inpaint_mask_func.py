@@ -10,10 +10,22 @@ import torch
 import torchvision
 
 
+def save_masked_image(image_mask, save_path="generation_samples/inpainting_box_mask/"):
+    # Assuming image_mask is a torch.Tensor representing the masked image
+    # You'll need to convert it to the desired image format and save it to the specified path
+    # Here's an example using Pillow library (requires the 'Pillow' package to be installed)
+
+    # Convert the tensor to a numpy array
+    image_array = image_mask.numpy()
+
+    # Create a PIL Image object
+    image = Image.fromarray(image_array)
+
+    # Save the image to the specified path
+    image.save(save_path, format="png")
 
 
-
-def draw_masks_from_boxes(boxes, size, randomize_fg_mask=False, random_add_bg_mask=False):
+def draw_masks_from_boxes(boxes, size, randomize_fg_mask=False, random_add_bg_mask=False, save_path=None):
     "boxes should be the output from dataset, which is a batch of bounding boxes"
 
     image_masks = [] 
@@ -38,6 +50,10 @@ def draw_masks_from_boxes(boxes, size, randomize_fg_mask=False, random_add_bg_ma
             image_mask *= bg_mask
 
         image_masks.append(image_mask)
+
+        if save_path is not None:
+            save_masked_image(image_mask, save_path)  # Save the masked image
+
     return torch.stack(image_masks).unsqueeze(1)
 
 
