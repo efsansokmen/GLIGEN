@@ -9,7 +9,7 @@ from copy import deepcopy
 import torch 
 from ldm.util import instantiate_from_config
 from trainer import read_official_ckpt, batch_to_device
-from inpaint_mask_func import draw_masks_from_boxes
+from inpaint_mask_func import draw_masks_from_boxes, get_sam_mask
 import numpy as np
 import clip 
 from scipy.io import loadmat
@@ -398,7 +398,8 @@ def run(meta, config, starting_noise=None):
         assert config.inpaint_mode, 'input_image is given, the ckpt must be the inpaint model, are you using the correct ckpt?'
         
         inpainting_mask = draw_masks_from_boxes( batch['boxes'], model.image_size ).cuda()
-        
+        print(np.shape(batch['boxes']),model.image_size)
+        #inpainting_mask = get_sam_mask()
         input_image = F.pil_to_tensor( Image.open(meta["input_image"]).convert("RGB").resize((512,512)) ) 
         input_image = ( input_image.float().unsqueeze(0).cuda() / 255 - 0.5 ) / 0.5
         z0 = autoencoder.encode( input_image )
@@ -525,12 +526,13 @@ if __name__ == "__main__":
 
         # - - - - - - - - GLIGEN on image grounding for inpainting - - - - - - - - # 
         dict(
-            ckpt = "../../checkpoints/inpainting_box_text_image.bin",
-            input_image = "inference_images/test.png",
+            ckpt = "/checkpoints/inpainting_box_text_image.bin",
+            input_image = "inference_data/input/image_to_inpaint.png",
             prompt = "kitchen lights",
-            images = [ 'inference_images/hanging_light.png'],
-            locations = [ [0.0, 0.000, 0.5,0.5] ], # mask will be derived from box 
-            save_folder_name="inpainting_box_image"
+            images = [ 'inference_images/lamp.png'],
+            locations = [ [0.,0.,0.5,0.5] ], # mask will be derived from box  #155,0,227,238
+            masks = torch.load("inference_data/input/masks_tensor.pt"),
+            save_folder_name="inference_data/output/"
         ),
 
 

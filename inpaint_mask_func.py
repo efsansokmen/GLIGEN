@@ -9,7 +9,7 @@ from PIL import Image
 import torch
 import torchvision
 import os
-
+import csv
 
 def save_masked_image(image_mask, save_path):
     # Assuming image_mask is a torch.Tensor representing the masked image
@@ -31,11 +31,11 @@ def draw_masks_from_boxes(boxes, size, randomize_fg_mask=False, random_add_bg_ma
     "boxes should be the output from dataset, which is a batch of bounding boxes"
 
     image_masks = [] 
-    k=0
+    #k=0
     for box in boxes: # This is batch dimension
 
         image_mask = torch.ones(size,size)
-        image_mask_np = np.ones((size,size))
+        #image_mask_np = np.ones((size,size))
         for bx in box:
             x0,y0,x1,y1 = bx*size
             x0,y0,x1,y1 = int(x0), int(y0), int(x1), int(y1)
@@ -43,27 +43,67 @@ def draw_masks_from_boxes(boxes, size, randomize_fg_mask=False, random_add_bg_ma
             obj_height = y1-y0
             if randomize_fg_mask and (random.uniform(0,1)<0.5) and (obj_height>=4) and (obj_width>=4):
                 obj_mask = get_a_fg_mask(obj_height, obj_width)
+                print("onj_mask", obj_mask, obj_mask.shape)
                 image_mask[y0:y1,x0:x1] = image_mask[y0:y1,x0:x1] * obj_mask # put obj mask into the inpainting mask 
-                image_mask_np[y0:y1,x0:x1] = image_mask_np[y0:y1,x0:x1] * obj_mask
+                #image_mask_np[y0:y1,x0:x1] = image_mask_np[y0:y1,x0:x1] * obj_mask
             else:
-                image_mask[y0:y1,x0:x1] = 0  # box itself is mask for the obj
-                image_mask_np[y0:y1,x0:x1] = 0
+                print("ELSE")
+                image_mask[y0:y1,x0:x1] = 0  
+                print(image_mask, image_mask.shape,image_mask[y0:y1,x0:x1]) # box itself is mask for the obj
+                #image_mask_np[y0:y1,x0:x1] = 0
 
         # So far we already drew all masks for obj, add bg mask if needed
         if random_add_bg_mask and (random.uniform(0,1)<0.5):
             bg_mask = get_a_bg_mask(size)
             image_mask *= bg_mask
-            image_mask_np*= bg_mask
+            #image_mask_np*= bg_mask
         
-        k=k+1
-        save_masked_image(image_mask_np, f"generation_samples/inpainting_box_mask/{str(k)}.png")  # Save the masked image
-        print(f"Saved masks in generation_samples/inpainting_box_mask/{str(k)}.png")
+        #k=k+1
+        #save_masked_image(image_mask_np, f"generation_samples/inpainting_box_mask/{str(k)}.png")  # Save the masked image
+        #print(f"Saved masks in generation_samples/inpainting_box_mask/{str(k)}.png")
         image_masks.append(image_mask)
 
     return torch.stack(image_masks).unsqueeze(1)
 
+def get_sam_mask(boxes, size, tensor_file_path="inference_data/input/masks_tensor.pt", metadata_csv_path="inference_data/input/metadata.csv"):
+    "boxes should be the output from dataset, which is a batch of bounding boxes"
 
+    #with open(metadata_csv_path, 'r') as file:
+    #    reader = csv.DictReader(file)
+    #    for row in reader:
+    #        name = row['name']
+    #        json_index = row['json_index']
+    #        room_type = row['room_type']
+    #        product_id = row['product_id']
+    #        product_index = row['product_index']
+    #        metadata_path = row['metadata_path']
+    #        save_path = row['save_path']
+    #        image_width = row['image_width']
+    #        image_height = row['image_height']
+    #        image_name = row['image_name']
+    #        bbox_x_tl = row['bbox_x_tl']
+    #        bbox_y_tl = row['bbox_y_tl']
+    #        bbox_x_br = row['bbox_x_br']
+    #        bbox_y_br = row['bbox_y_br']
+    #        point_x = row['point_x']
+    #        point_y = row['point_y']
 
+    image_masks = [] 
+
+    for box in boxes: # This is batch dimension
+
+        image_mask = torch.ones(size,size)
+        #image_mask_np = np.ones((size,size))
+        for bx in box:
+            x0,y0,x1,y1 = bx*size
+            x0,y0,x1,y1 = int(x0), int(y0), int(x1), int(y1)
+            obj_mask = torch.load("inference_data/input/masks_tensor.pt")
+            print("image_mask",image_mask,image_mask.shape)
+            image_mask[y0:y1,x0:x1] = image_mask[y0:y1,x0:x1] * obj_mask # put obj mask into the inpainting mask 
+
+        image_masks.append(image_mask)
+
+    return torch.stack(image_masks).unsqueeze(1)
 
 
 def get_a_fg_mask(height, width):

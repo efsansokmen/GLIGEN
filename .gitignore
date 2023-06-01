@@ -92,3 +92,4 @@ generation_samples/inpainting_box_image/*
 test.py
 inference_images/*
 generation_samples/*
+inference_data/*
